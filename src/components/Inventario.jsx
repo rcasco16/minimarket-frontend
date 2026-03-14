@@ -42,31 +42,47 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
 
     // 👇 NUEVO: Interceptamos si el usuario quiere crear una categoría nueva
     if (name === 'categoria_id' && value === 'nueva') {
-      const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
+  const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
+  
+  if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
+    try {
+      const token = localStorage.getItem('tokenMinimarket');
       
-      if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
-        try {
-          const token = localStorage.getItem('tokenMinimarket');
-          // 👇 URL ACTUALIZADA (2/4) 👇
-          const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ nombre: nombreNuevaCat, empresa_id: usuarioActivo.empresa_id })
-          });
-          
-          if (res.ok) {
-            const data = await res.json();
-            // Refrescamos la lista de categorías y seleccionamos la nueva
-            cargarCategorias();
-            setNuevoProducto({ ...nuevoProducto, categoria_id: data.id });
-          }
-        } catch (error) { alert("Error al crear categoría"); }
+      const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+          nombre: nombreNuevaCat.trim(), 
+          empresa_id: usuarioActivo.empresa_id 
+        })
+      });
+      
+      const data = await res.json();
+
+      if (res.ok) {
+        // 1. Forzamos una pequeña espera para que MySQL respire
+        setTimeout(async () => {
+          await cargarCategorias(); 
+          // 2. Usamos el ID exacto que devolvió el Backend
+          setNuevoProducto(prev => ({ ...prev, categoria_id: data.id }));
+          alert(`Categoría "${nombreNuevaCat}" creada y seleccionada.`);
+        }, 500);
       } else {
-        // Si cancela la ventanita, volvemos a la categoría por defecto
-        setNuevoProducto({ ...nuevoProducto, categoria_id: categorias[0]?.id || '' });
+        // Si el servidor responde pero con error (ej. 403 o 500)
+        alert("Error del servidor: " + (data.mensaje || data.detalle || "No se pudo crear"));
       }
-      return; // Salimos de la función para que no se guarde la palabra "nueva"
+    } catch (error) { 
+      console.error("Error de red:", error);
+      alert("Error de conexión al crear categoría"); 
     }
+  } else {
+    setNuevoProducto({ ...nuevoProducto, categoria_id: categorias[0]?.id || '' });
+  }
+  return;
+}
 
     let datosActualizados = { ...nuevoProducto, [name]: value };
     
