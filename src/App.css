@@ -1,0 +1,361 @@
+/* =========================================
+   VARIABLES DE DISEÑO (RC Creación de Software)
+========================================= */
+:root {
+  --bg-base: #121212;
+  --bg-panel: #1e1e1e;
+  --bg-sidebar: #0a0a0a;
+  --accent: #4CAF50;
+  --accent-hover: #45a049;
+  --danger: #d32f2f;
+  --danger-hover: #b71c1c;
+  --border: #333333;
+  --text-main: #ffffff;
+  --text-muted: #cccccc;
+  --text-dim: #888888;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+/* =========================================
+   BOTONES Y FORMULARIOS (Estilo Vite)
+========================================= */
+button {
+  font-size: 16px;
+  padding: 10px 15px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: white;
+  font-weight: bold;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+  box-shadow: var(--shadow);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: var(--danger-hover);
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  transition: border-color 0.3s;
+}
+
+input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* =========================================
+   ESTRUCTURA PRINCIPAL (Responsive)
+========================================= */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 100%;
+  background-color: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-header h2 { color: var(--accent); font-size: 20px; }
+.sidebar-header p { color: var(--text-dim); font-size: 12px; margin-top: 5px; }
+
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  width: 100%;
+  padding: 12px;
+  background-color: transparent;
+  color: var(--text-main);
+  text-align: left;
+}
+
+.nav-item:hover {
+  border-color: var(--border);
+}
+
+.nav-item.active {
+  background-color: var(--bg-panel);
+  color: var(--accent);
+  font-weight: bold;
+}
+
+/* =========================================
+   FOOTER RESPONSIVO (Usuario y Salir)
+========================================= */
+.desktop-footer {
+  display: none; /* Oculto en celulares por defecto */
+}
+
+.mobile-footer {
+  display: block;
+  padding: 20px;
+  background-color: var(--bg-sidebar);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  width: 100%;
+}
+
+.mobile-footer p, .desktop-footer p {
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  width: 100%;
+}
+
+.panel {
+  background-color: var(--bg-panel);
+  padding: 20px;
+  border-radius: 8px;
+  color: var(--text-muted);
+}
+
+/* =========================================
+   TABLAS DE INVENTARIO
+========================================= */
+.table-container {
+  overflow-x: auto;
+  background-color: var(--bg-panel);
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+th {
+  background-color: #2a2a2a;
+  padding: 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+td {
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+tr:hover td {
+  background-color: #252525;
+}
+
+.price { color: var(--accent); font-weight: bold; }
+
+/* =========================================
+   LOGIN
+========================================= */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  text-align: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 30px;
+}
+
+/* =========================================
+   MODAL (Ventana Emergente de Nuevo Producto)
+========================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--bg-panel);
+  padding: 30px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-close:hover { color: var(--danger); }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* Para que el nombre del producto ocupe toda la fila entera */
+.full-width { grid-column: 1 / -1; }
+
+/* =========================================
+   MENÚ LATERAL COLAPSABLE (Actualización)
+========================================= */
+.sidebar {
+  transition: width 0.3s ease;
+  position: relative; /* Necesario para el botón flotante */
+}
+
+@media (min-width: 768px) {
+  .sidebar.colapsado {
+    width: 80px; /* Se encoge a 80px */
+  }
+  
+  /* Ocultamos el texto cuando está colapsado */
+  .sidebar.colapsado .texto-menu,
+  .sidebar.colapsado .sidebar-header p,
+  .sidebar.colapsado .desktop-footer p { 
+    display: none; 
+  }
+  
+  .sidebar.colapsado .sidebar-header h2 { 
+    font-size: 16px; 
+    text-align: center;
+  }
+  
+  .sidebar.colapsado .btn-danger { 
+    padding: 10px 0; 
+    font-size: 16px; 
+  }
+}
+
+.btn-toggle {
+  position: absolute;
+  top: 15px;
+  right: -15px;
+  width: 30px;
+  height: 30px;
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: none; /* Oculto en celulares */
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+
+@media (min-width: 768px) {
+  .btn-toggle { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+  }
+}
+
+/* =========================================
+   MEDIA QUERIES (PC y Tablets)
+========================================= */
+@media (min-width: 768px) {
+  .app-layout { flex-direction: row; }
+  .sidebar {
+    width: 260px;
+    height: 100vh;
+    border-right: 1px solid var(--border);
+    border-bottom: none;
+    position: sticky;
+    top: 0;
+  }
+  .main-content { padding: 40px; }
+  
+  /* Aquí encendemos el footer de PC y apagamos el de celular */
+  .mobile-footer { display: none; }
+  .desktop-footer {
+    display: block; 
+    padding: 20px;
+    border-top: 1px solid var(--border);
+  }
+}
