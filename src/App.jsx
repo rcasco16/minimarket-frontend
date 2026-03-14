@@ -9,6 +9,7 @@ import Inventario from './components/Inventario'
 import CierreCaja from './components/CierreCaja'
 import Reportes from './components/Reportes'
 import Personal from './components/Personal'
+import RegistroEmpresa from './components/RegistroEmpresa';
 
 function App() {
   const [usuarioActivo, setUsuarioActivo] = useState(null)
@@ -41,17 +42,23 @@ function App() {
     if (usuarioActivo) cargarProductos();
   }, [usuarioActivo]);
 
-
+  
   // ==========================================
   // RENDER PRINCIPAL DEL DIRECTOR DE ORQUESTA
   // ==========================================
 
-  // Si no hay usuario, mostramos el componente Login
+  // 1. 👇 RUTA SECRETA PARA EL DUEÑO (RC Creación de Software) 👇
+  // Si en la URL escribes /master-rc, mostramos el registro sin importar nada más
+  if (window.location.pathname === '/master-rc') {
+    return <RegistroEmpresa />
+  }
+
+  // 2. Si no hay usuario, mostramos el componente Login
   if (!usuarioActivo) {
     return <Login onLoginExitoso={setUsuarioActivo} />
   }
 
-  // Si hay usuario, mostramos el esqueleto de la App y cargamos las vistas
+  // 3. Si hay usuario, mostramos el esqueleto de la App
   return (
     <div className="app-layout">
 
@@ -65,7 +72,7 @@ function App() {
         setMenuColapsado={setMenuColapsado}
       />
 
-      {/* 2. EL CONTENIDO CENTRAL (El componente cambia según el estado) */}
+      {/* 2. EL CONTENIDO CENTRAL */}
       <main className="main-content">
 
         {vistaActual === 'caja' && (
