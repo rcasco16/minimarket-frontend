@@ -37,52 +37,61 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
   }, []);
 
 
-  const manejarCambioInput = async (e) => {
+ const manejarCambioInput = async (e) => {
     const { name, value } = e.target;
 
-    // 👇 NUEVO: Interceptamos si el usuario quiere crear una categoría nueva
     if (name === 'categoria_id' && value === 'nueva') {
-  const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
-  
-  if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
-    try {
-      const token = localStorage.getItem('tokenMinimarket');
-      
-      const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ 
-          nombre: nombreNuevaCat.trim(), 
-          empresa_id: usuarioActivo.empresa_id 
-        })
-      });
-      
-      const data = await res.json();
+        const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
+        
+        if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
+            try {
+                const token = localStorage.getItem('tokenMinimarket');
+                const datosAEnviar = { 
+                    nombre: nombreNuevaCat.trim(), 
+                    empresa_id: usuarioActivo.empresa_id 
+                };
 
-      if (res.ok) {
-        // 1. Forzamos una pequeña espera para que MySQL respire
-        setTimeout(async () => {
-          await cargarCategorias(); 
-          // 2. Usamos el ID exacto que devolvió el Backend
-          setNuevoProducto(prev => ({ ...prev, categoria_id: data.id }));
-          alert(`Categoría "${nombreNuevaCat}" creada y seleccionada.`);
-        }, 500);
-      } else {
-        // Si el servidor responde pero con error (ej. 403 o 500)
-        alert("Error del servidor: " + (data.mensaje || data.detalle || "No se pudo crear"));
-      }
-    } catch (error) { 
-      console.error("Error de red:", error);
-      alert("Error de conexión al crear categoría"); 
+                console.log("Enviando nueva categoría...", datosAEnviar);
+
+                const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify(datosAEnviar)
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    console.log("Categoría creada con éxito:", data);
+                    // 1. Recargamos la lista desde el servidor
+                    await cargarCategorias(); 
+                    
+                    // 2. IMPORTANTE: Esperamos un poquito y seleccionamos la nueva
+                    // El ID que devuelve tu backend es 'id', no 'productoId'
+                    setTimeout(() => {
+                        setNuevoProducto(prev => ({ 
+                            ...prev, 
+                            categoria_id: data.id 
+                        }));
+                    }, 300);
+
+                    alert(`Categoría "${nombreNuevaCat}" lista.`);
+                } else {
+                    alert("Error al guardar: " + (data.mensaje || "Revisa los datos"));
+                }
+            } catch (error) { 
+                console.error("Error en la petición:", error);
+                alert("No se pudo conectar con el servidor"); 
+            }
+        } else {
+            // Si cancela, volvemos a la primera categoría de la lista
+            setNuevoProducto(prev => ({ ...prev, categoria_id: categorias[0]?.id || '' }));
+        }
+        return; 
     }
-  } else {
-    setNuevoProducto({ ...nuevoProducto, categoria_id: categorias[0]?.id || '' });
-  }
-  return;
-}
 
     let datosActualizados = { ...nuevoProducto, [name]: value };
     
