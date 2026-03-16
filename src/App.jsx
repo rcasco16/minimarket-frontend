@@ -27,6 +27,7 @@ function App() {
 
   // 👇 FUNCIÓN PARA ENTRAR COMO DEMO
   const entrarComoDemo = () => {
+  localStorage.setItem('tokenMinimarket', 'token-de-cortesia-demo');
   const usuarioDemo = {
     id: 999,
     nombre: "Usuario Demo", 
