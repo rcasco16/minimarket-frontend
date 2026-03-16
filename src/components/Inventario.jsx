@@ -36,6 +36,38 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
     cargarCategorias();
   }, []);
 
+  const crearNuevaCategoriaDirecto = async () => {
+  const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
+  
+  if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
+    try {
+      const token = localStorage.getItem('tokenMinimarket');
+      const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+          nombre: nombreNuevaCat.trim(), 
+          empresa_id: usuarioActivo.empresa_id 
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        await cargarCategorias();
+        // Seteamos la nueva categoría al producto actual
+        setNuevoProducto(prev => ({ ...prev, categoria_id: data.id }));
+        alert(`Categoría "${nombreNuevaCat}" creada.`);
+      } else {
+        alert("Error al crear categoría.");
+      }
+    } catch (error) {
+      alert("Error de conexión.");
+    }
+  }
+};
 
   const manejarCambioInput = (e) => {
     const { name, value } = e.target;
@@ -216,21 +248,29 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                 {/* 👇 NUEVO: El Select ahora se dibuja leyendo la base de datos 👇 */}
                 <div className="form-group">
                   <label>Categoría</label>
-                  <select
-                    name="categoria_id"
-                    value={nuevoProducto.categoria_id}
-                    onChange={manejarCambioInput}
-                    required
-                    className="form-control" // O el estilo que estés usando
-                  >
-                    {/* 👇 Agrega esta línea si no la tienes, ayuda a que el onChange detecte mejor los clics */}
-                    <option value="" disabled>-- Selecciona Categoría --</option>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <select
+                      name="categoria_id"
+                      value={nuevoProducto.categoria_id}
+                      onChange={manejarCambioInput}
+                      style={{ flex: 1, padding: '12px', borderRadius: '6px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-base)', color: 'white' }}
+                      required
+                    >
+                      <option value="" disabled>Selecciona una categoría</option>
+                      {categorias.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                      ))}
+                    </select>
 
-                    {categorias.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.nombre}</option>
-                    ))}
-                    <option value="nueva" style={{ color: 'var(--accent)', fontWeight: 'bold' }}>+ Agregar nueva...</option>
-                  </select>
+                    <button
+                      type="button"
+                      onClick={crearNuevaCategoriaDirecto}
+                      style={{ padding: '0 15px', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '6px', color: 'black', fontWeight: 'bold', cursor: 'pointer' }}
+                      title="Agregar nueva categoría"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-group"><label>Proveedor (Opcional)</label><input type="text" name="proveedor" value={nuevoProducto.proveedor} onChange={manejarCambioInput} placeholder="Ej. Coca-Cola" /></div>
