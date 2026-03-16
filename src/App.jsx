@@ -9,7 +9,7 @@ import Reportes from './components/Reportes'
 import Personal from './components/Personal'
 import RegistroEmpresa from './components/RegistroEmpresa';
 // 👇 Importamos la Landing que creamos
-import LandingPage from './components/LandingPage'; 
+import LandingPage from './components/LandingPage';
 
 function App() {
   const [usuarioActivo, setUsuarioActivo] = useState(null)
@@ -27,22 +27,22 @@ function App() {
 
   // 👇 FUNCIÓN PARA ENTRAR COMO DEMO
   const entrarComoDemo = () => {
-    const usuarioDemo = {
-      id: 999,
-      nombre: "Visitante de Prueba",
-      rol: "admin",
-      empresa_id: 1, // Usamos los datos de tu empresa principal para que vean productos reales
-      esDemo: true
-    };
-    setUsuarioActivo(usuarioDemo);
-    setMostrarLanding(false);
-  }
+  const usuarioDemo = {
+    id: 999,
+    nombre: "Usuario Demo", 
+    rol: "admin",
+    empresa_id: 1, 
+    esDemo: true
+  };
+  setUsuarioActivo(usuarioDemo);
+  setMostrarLanding(false);
+};
 
   const cargarProductos = async () => {
     try {
       const token = localStorage.getItem('tokenMinimarket');
       const empresaId = usuarioActivo.empresa_id;
-      
+
       // Si es demo, podemos usar un token público o saltar la verificación si el backend lo permite
       const respuesta = await fetch(`https://api-minimarket-rc.onrender.com/api/productos/empresa/${empresaId}`, {
         method: 'GET',
@@ -66,10 +66,10 @@ function App() {
 
   // 2. MOSTRAR LANDING PAGE (Publicidad)
   if (mostrarLanding && !usuarioActivo) {
-    return <LandingPage 
-              onIrAlLogin={() => setMostrarLanding(false)} 
-              onProbarDemo={entrarComoDemo} 
-           />
+    return <LandingPage
+      onIrAlLogin={() => setMostrarLanding(false)}
+      onProbarDemo={entrarComoDemo}
+    />
   }
 
   // 3. SI NO HAY USUARIO PERO YA PASÓ LA LANDING, MOSTRAR LOGIN
@@ -80,10 +80,23 @@ function App() {
   // 4. SISTEMA PRINCIPAL
   return (
     <div className={`app-layout ${usuarioActivo.esDemo ? 'modo-demo' : ''}`}>
-      {/* Marcador de que es una DEMO */}
+      {/* Marcador de que es una DEMO - Ahora arriba y discreto */}
       {usuarioActivo.esDemo && (
-        <div style={{ backgroundColor: '#f59e0b', color: 'black', textAlign: 'center', fontWeight: 'bold', fontSize: '12px', padding: '5px' }}>
-          ⚠️ ESTÁS EN MODO DEMO - Los cambios no se guardarán permanentemente.
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#f59e0b',
+          color: 'black',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          fontSize: '13px',
+          padding: '8px',
+          zIndex: 9999,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+        }}>
+          🚀 MODO DEMO: Explora todas las funciones libremente.
         </div>
       )}
 

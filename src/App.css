@@ -289,6 +289,26 @@ tr:hover td {
   position: relative; /* Necesario para el botón flotante */
 }
 
+.main-content {
+  flex: 1;
+  padding: 20px;
+  margin-top: 40px; /* Espacio para la barra de demo de arriba */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.sidebar-button {
+  height: 45px; /* Altura fija */
+  display: flex;
+  align-items: center;
+  transition: none; /* Quitamos transiciones que causan saltos */
+  padding: 10px 15px;
+  width: 100%;
+}
+
 @media (min-width: 768px) {
   .sidebar.colapsado {
     width: 80px; /* Se encoge a 80px */
