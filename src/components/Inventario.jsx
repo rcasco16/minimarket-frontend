@@ -4,7 +4,7 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
   const [busqueda, setBusqueda] = useState('');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
-  
+
   // 👇 NUEVO: Estado para guardar la lista de categorías
   const [categorias, setCategorias] = useState([]);
 
@@ -37,65 +37,62 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
   }, []);
 
 
- const manejarCambioInput = async (e) => {
+  const manejarCambioInput = (e) => {
     const { name, value } = e.target;
 
+    // 👇 MEJORA: Manejo de Nueva Categoría
     if (name === 'categoria_id' && value === 'nueva') {
+      // Importante: Reseteamos el valor del select inmediatamente para que no se quede trabado en "nueva"
+      setNuevoProducto(prev => ({ ...prev, categoria_id: categorias[0]?.id || '' }));
+
+      setTimeout(async () => {
         const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
-        
+
         if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
-            try {
-                const token = localStorage.getItem('tokenMinimarket');
-                const datosAEnviar = { 
-                    nombre: nombreNuevaCat.trim(), 
-                    empresa_id: usuarioActivo.empresa_id 
-                };
+          try {
+            const token = localStorage.getItem('tokenMinimarket');
 
-                console.log("Enviando nueva categoría...", datosAEnviar);
-
-                const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': `Bearer ${token}` 
-                    },
-                    body: JSON.stringify(datosAEnviar)
-                });
-                
-                const data = await res.json();
-                
-                if (res.ok) {
-                    console.log("Categoría creada con éxito:", data);
-                    // 1. Recargamos la lista desde el servidor
-                    await cargarCategorias(); 
-                    
-                    // 2. IMPORTANTE: Esperamos un poquito y seleccionamos la nueva
-                    // El ID que devuelve tu backend es 'id', no 'productoId'
-                    setTimeout(() => {
-                        setNuevoProducto(prev => ({ 
-                            ...prev, 
-                            categoria_id: data.id 
-                        }));
-                    }, 300);
-
-                    alert(`Categoría "${nombreNuevaCat}" lista.`);
-                } else {
-                    alert("Error al guardar: " + (data.mensaje || "Revisa los datos"));
-                }
-            } catch (error) { 
-                console.error("Error en la petición:", error);
-                alert("No se pudo conectar con el servidor"); 
+            // Verificamos si tenemos el ID de empresa antes de enviar
+            if (!usuarioActivo?.empresa_id) {
+              alert("Error: No se detectó el ID de la empresa. Reintenta loguearte.");
+              return;
             }
-        } else {
-            // Si cancela, volvemos a la primera categoría de la lista
-            setNuevoProducto(prev => ({ ...prev, categoria_id: categorias[0]?.id || '' }));
+
+            const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                nombre: nombreNuevaCat.trim(),
+                empresa_id: usuarioActivo.empresa_id
+              })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+              // Recargamos la lista desde la DB
+              await cargarCategorias();
+              // Seleccionamos la categoría recién creada usando el ID que devolvió el backend
+              setNuevoProducto(prev => ({ ...prev, categoria_id: data.id }));
+              alert(`Categoría "${nombreNuevaCat}" creada con éxito.`);
+            } else {
+              alert("Error del servidor: " + (data.mensaje || "No se pudo guardar"));
+            }
+          } catch (error) {
+            console.error("Error al crear categoría:", error);
+            alert("Error de conexión con el servidor.");
+          }
         }
-        return; 
+      }, 200); // Un pelín más de tiempo para asegurar que el select se cierre bien
+      return;
     }
 
+    // Lógica normal para los demás campos
     let datosActualizados = { ...nuevoProducto, [name]: value };
-    
-    // Cálculo de porcentaje
+
     if (name === 'precio_compra' || name === 'porcentaje_ganancia') {
       const costo = parseFloat(datosActualizados.precio_compra) || 0;
       const porcentaje = parseFloat(datosActualizados.porcentaje_ganancia) || 0;
@@ -123,7 +120,7 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
     try {
       const token = localStorage.getItem('tokenMinimarket');
       const productoAGuardar = { ...nuevoProducto, empresa_id: usuarioActivo.empresa_id };
-      
+
       // 👇 URL ACTUALIZADA (3/4) 👇
       let url = 'https://api-minimarket-rc.onrender.com/api/productos';
       let metodo = 'POST';
@@ -142,14 +139,14 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
 
       if (respuesta.ok) {
         setMostrarModal(false);
-        cargarProductos(); 
+        cargarProductos();
         alert(modoEdicion ? "¡Producto actualizado!" : "¡Producto registrado!");
       } else { alert("Hubo un error al guardar los datos."); }
     } catch (error) { console.error(error); }
   };
 
-  const productosFiltrados = productos.filter(prod => 
-    prod.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
+  const productosFiltrados = productos.filter(prod =>
+    prod.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
     prod.codigo_barras.includes(busqueda)
   );
 
@@ -215,11 +212,20 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                 <div className="form-group full-width"><label>Nombre del Producto</label><input type="text" name="nombre" value={nuevoProducto.nombre} onChange={manejarCambioInput} required /></div>
                 <div className="form-group"><label>Código de Barras</label><input type="text" name="codigo_barras" value={nuevoProducto.codigo_barras} onChange={manejarCambioInput} required /></div>
                 <div className="form-group"><label>Stock Actual</label><input type="number" name="stock_actual" value={nuevoProducto.stock_actual} onChange={manejarCambioInput} required /></div>
-                
+
                 {/* 👇 NUEVO: El Select ahora se dibuja leyendo la base de datos 👇 */}
                 <div className="form-group">
                   <label>Categoría</label>
-                  <select name="categoria_id" value={nuevoProducto.categoria_id} onChange={manejarCambioInput} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-base)', color: 'white' }} required>
+                  <select
+                    name="categoria_id"
+                    value={nuevoProducto.categoria_id}
+                    onChange={manejarCambioInput}
+                    required
+                    className="form-control" // O el estilo que estés usando
+                  >
+                    {/* 👇 Agrega esta línea si no la tienes, ayuda a que el onChange detecte mejor los clics */}
+                    <option value="" disabled>-- Selecciona Categoría --</option>
+
                     {categorias.map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.nombre}</option>
                     ))}
@@ -231,7 +237,7 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                 <div className="form-group full-width" style={{ borderTop: '1px dashed #444', paddingTop: '15px', marginTop: '10px' }}><label style={{ color: 'var(--accent)' }}>Finanzas del Producto</label></div>
                 <div className="form-group"><label>Precio Compra (Costo Gs.)</label><input type="number" name="precio_compra" value={nuevoProducto.precio_compra} onChange={manejarCambioInput} required /></div>
                 <div className="form-group"><label>% Ganancia Deseada (Opcional)</label><input type="number" name="porcentaje_ganancia" value={nuevoProducto.porcentaje_ganancia} onChange={manejarCambioInput} placeholder="Ej. 30" /></div>
-                <div className="form-group full-width"><label>Precio Venta Final (Gs.)</label><input type="number" name="precio_venta" value={nuevoProducto.precio_venta} onChange={manejarCambioInput} required style={{ backgroundColor: '#2a2a2a', fontWeight: 'bold', color: 'var(--accent)' }}/></div>
+                <div className="form-group full-width"><label>Precio Venta Final (Gs.)</label><input type="number" name="precio_venta" value={nuevoProducto.precio_venta} onChange={manejarCambioInput} required style={{ backgroundColor: '#2a2a2a', fontWeight: 'bold', color: 'var(--accent)' }} /></div>
               </div>
               <button type="submit" className="btn-primary" style={{ width: '100%' }}>{modoEdicion ? 'Guardar Cambios' : 'Guardar en Inventario'}</button>
             </form>
