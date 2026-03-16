@@ -123,4 +123,25 @@ function Personal({ usuarioActivo }) {
   );
 }
 
+const eliminarEmpleado = async (id) => {
+  if (window.confirm("¿Estás seguro de que deseas eliminar este empleado?")) {
+    try {
+      const token = localStorage.getItem('tokenMinimarket');
+      const res = await fetch(`https://api-minimarket-rc.onrender.com/api/usuarios/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        alert("Empleado eliminado");
+        cargarPersonal(); // Recarga la lista
+      } else {
+        alert("No se pudo eliminar");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+};
+
 export default Personal;
