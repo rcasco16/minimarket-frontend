@@ -10,8 +10,6 @@ function Personal({ usuarioActivo }) {
   const cargarEmpleados = async () => {
     try {
       const token = localStorage.getItem('tokenMinimarket');
-      
-      // 👇 PRIMERA URL ACTUALIZADA: PARA TRAER EMPLEADOS 👇
       const res = await fetch(`https://api-minimarket-rc.onrender.com/api/usuarios/empresa/${usuarioActivo.empresa_id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -26,13 +24,41 @@ function Personal({ usuarioActivo }) {
     cargarEmpleados();
   }, [usuarioActivo.empresa_id]);
 
+  // 👇 FUNCIÓN DE ELIMINAR (Ahora dentro del componente)
+  const eliminarEmpleado = async (id, nombre) => {
+    if (id === usuarioActivo.id) {
+        alert("No puedes eliminarte a ti mismo.");
+        return;
+    }
+
+    if (window.confirm(`¿Estás seguro de que deseas eliminar a ${nombre}?`)) {
+      try {
+        const token = localStorage.getItem('tokenMinimarket');
+        const res = await fetch(`https://api-minimarket-rc.onrender.com/api/usuarios/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          alert("Empleado eliminado correctamente");
+          cargarEmpleados(); // Recarga la lista automáticamente
+        } else {
+          const error = await res.json();
+          alert(error.mensaje || "No se pudo eliminar");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Error de conexión al intentar eliminar");
+      }
+    }
+  };
+
   const guardarEmpleado = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('tokenMinimarket');
       const empleadoAGuardar = { ...nuevoEmpleado, empresa_id: usuarioActivo.empresa_id };
       
-      // 👇 SEGUNDA URL ACTUALIZADA: PARA GUARDAR EMPLEADO 👇
       const res = await fetch('https://api-minimarket-rc.onrender.com/api/usuarios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -40,7 +66,7 @@ function Personal({ usuarioActivo }) {
       });
 
       if (res.ok) {
-        alert('¡Empleado registrado con éxito!');
+        alert('¡Empleado registrado con éxito! Ya puede iniciar sesión.');
         setMostrarModal(false);
         setNuevoEmpleado({ nombre: '', email: '', password: '', rol: 'cajero' });
         cargarEmpleados();
@@ -65,6 +91,7 @@ function Personal({ usuarioActivo }) {
               <th>Nombre</th>
               <th>Correo de Acceso (Email)</th>
               <th>Rol / Permisos</th>
+              <th style={{ textAlign: 'center' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -80,6 +107,21 @@ function Personal({ usuarioActivo }) {
                   }}>
                     {emp.rol}
                   </span>
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                    {/* 👇 BOTÓN DE ELIMINAR CON ESTILO ROJO */}
+                    {emp.id !== usuarioActivo.id && (
+                        <button 
+                            onClick={() => eliminarEmpleado(emp.id, emp.nombre)}
+                            style={{ 
+                                backgroundColor: '#ef4444', color: 'white', border: 'none', 
+                                padding: '5px 10px', borderRadius: '4px', cursor: 'pointer',
+                                fontSize: '12px'
+                            }}
+                        >
+                            Eliminar
+                        </button>
+                    )}
                 </td>
               </tr>
             ))}
@@ -122,26 +164,5 @@ function Personal({ usuarioActivo }) {
     </div>
   );
 }
-
-const eliminarEmpleado = async (id) => {
-  if (window.confirm("¿Estás seguro de que deseas eliminar este empleado?")) {
-    try {
-      const token = localStorage.getItem('tokenMinimarket');
-      const res = await fetch(`https://api-minimarket-rc.onrender.com/api/usuarios/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (res.ok) {
-        alert("Empleado eliminado");
-        cargarPersonal(); // Recarga la lista
-      } else {
-        alert("No se pudo eliminar");
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
-};
 
 export default Personal;
