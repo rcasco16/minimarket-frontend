@@ -119,10 +119,10 @@ function Reportes({ usuarioActivo }) {
         </div>
       </div>
 
-      {/* ==========================================
-          NUEVO: GRÁFICO AVANZADO (CON BLOQUEO DE PLAN)
+{/* ==========================================
+          GRÁFICO AVANZADO (CON BLOQUEO TOTAL DE PLAN)
       ========================================== */}
-      <div className="panel" style={{ padding: '20px', marginBottom: '30px', position: 'relative', overflow: 'hidden' }}>
+      <div className="panel" style={{ padding: '20px', marginBottom: '30px' }}>
         <h3 style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           📈 Tendencia de Ingresos Diarios
           {esPlanBasico && (
@@ -130,13 +130,13 @@ function Reportes({ usuarioActivo }) {
           )}
         </h3>
 
-        {/* Capa de bloqueo para Plan Básico */}
-        {esPlanBasico && (
+        {esPlanBasico ? (
+          // 👇 PANTALLA DE BLOQUEO TOTAL (Reemplaza al gráfico por completo) 👇
           <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(5px)',
+            height: '250px', width: '100%',
+            backgroundColor: 'var(--bg-base)', border: '1px dashed #ef4444',
             display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-            zIndex: 10, borderRadius: '8px'
+            borderRadius: '8px'
           }}>
             <h2 style={{ color: 'white', marginBottom: '10px' }}>Gráficos Avanzados Bloqueados</h2>
             <p style={{ color: 'var(--text-dim)', textAlign: 'center', maxWidth: '450px', marginBottom: '20px' }}>
@@ -149,29 +149,29 @@ function Reportes({ usuarioActivo }) {
               ⭐ Subir al Plan Emprendedor
             </button>
           </div>
+        ) : (
+          // 👇 EL GRÁFICO REAL (Solo se renderiza si NO es básico) 👇
+          <div style={{ height: '250px', width: '100%' }}>
+            {datosGrafico.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={datosGrafico} margin={{ top: 10, right: 10, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="nombre" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" tickFormatter={(value) => `Gs. ${value/1000}k`} />
+                  <Tooltip 
+                    formatter={(value) => [`Gs. ${value.toLocaleString('es-PY')}`, 'Ingresos']}
+                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: 'white' }}
+                  />
+                  <Bar dataKey="total" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-dim)' }}>
+                {cargando ? 'Cargando datos...' : 'Aún no hay ventas para generar el gráfico.'}
+              </div>
+            )}
+          </div>
         )}
-
-        {/* El Gráfico Real */}
-        <div style={{ height: '250px', width: '100%', opacity: esPlanBasico ? 0.3 : 1, pointerEvents: esPlanBasico ? 'none' : 'auto' }}>
-          {datosGrafico.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={datosGrafico} margin={{ top: 10, right: 10, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="nombre" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" tickFormatter={(value) => `Gs. ${value/1000}k`} />
-                <Tooltip 
-                  formatter={(value) => [`Gs. ${value.toLocaleString('es-PY')}`, 'Ingresos']}
-                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: 'white' }}
-                />
-                <Bar dataKey="total" fill="var(--accent)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div style={{ height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-dim)' }}>
-              {cargando ? 'Cargando datos...' : 'Aún no hay ventas para generar el gráfico.'}
-            </div>
-          )}
-        </div>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'stretch' }}>
