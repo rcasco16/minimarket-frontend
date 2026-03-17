@@ -5,18 +5,20 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
 
-  // 👇 NUEVO: Estado para guardar la lista de categorías
+  // Estado para guardar la lista de categorías
   const [categorias, setCategorias] = useState([]);
 
+  // 👇 AÑADIDO: unidad_medida al estado inicial
   const [nuevoProducto, setNuevoProducto] = useState({
-    id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '', stock_actual: '', stock_minimo: '', porcentaje_ganancia: '', categoria_id: '', proveedor: ''
+    id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '', 
+    stock_actual: '', stock_minimo: '', porcentaje_ganancia: '', categoria_id: '', 
+    proveedor: '', unidad_medida: 'unidad' 
   });
 
-  // 👇 NUEVO: Función para buscar las categorías de esta empresa
+  // Función para buscar las categorías de esta empresa
   const cargarCategorias = async () => {
     try {
       const token = localStorage.getItem('tokenMinimarket');
-      // 👇 URL ACTUALIZADA (1/4) 👇
       const res = await fetch(`https://api-minimarket-rc.onrender.com/api/categorias/empresa/${usuarioActivo.empresa_id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -37,59 +39,53 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
   }, []);
 
   const crearNuevaCategoriaDirecto = async () => {
-  const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
-  
-  if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
-    try {
-      const token = localStorage.getItem('tokenMinimarket');
-      const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ 
-          nombre: nombreNuevaCat.trim(), 
-          empresa_id: usuarioActivo.empresa_id 
-        })
-      });
+    const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
+    
+    if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
+      try {
+        const token = localStorage.getItem('tokenMinimarket');
+        const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}` 
+          },
+          body: JSON.stringify({ 
+            nombre: nombreNuevaCat.trim(), 
+            empresa_id: usuarioActivo.empresa_id 
+          })
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        await cargarCategorias();
-        // Seteamos la nueva categoría al producto actual
-        setNuevoProducto(prev => ({ ...prev, categoria_id: data.id }));
-        alert(`Categoría "${nombreNuevaCat}" creada.`);
-      } else {
-        alert("Error al crear categoría.");
+        if (res.ok) {
+          const data = await res.json();
+          await cargarCategorias();
+          // Seteamos la nueva categoría al producto actual
+          setNuevoProducto(prev => ({ ...prev, categoria_id: data.id }));
+          alert(`Categoría "${nombreNuevaCat}" creada.`);
+        } else {
+          alert("Error al crear categoría.");
+        }
+      } catch (error) {
+        alert("Error de conexión.");
       }
-    } catch (error) {
-      alert("Error de conexión.");
     }
-  }
-};
+  };
 
   const manejarCambioInput = (e) => {
     const { name, value } = e.target;
 
-    // 👇 MEJORA: Manejo de Nueva Categoría
+    // Manejo de Nueva Categoría (desde el select si lo tuvieras configurado así)
     if (name === 'categoria_id' && value === 'nueva') {
-      // Importante: Reseteamos el valor del select inmediatamente para que no se quede trabado en "nueva"
       setNuevoProducto(prev => ({ ...prev, categoria_id: categorias[0]?.id || '' }));
-
       setTimeout(async () => {
         const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
-
         if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
           try {
             const token = localStorage.getItem('tokenMinimarket');
-
-            // Verificamos si tenemos el ID de empresa antes de enviar
             if (!usuarioActivo?.empresa_id) {
               alert("Error: No se detectó el ID de la empresa. Reintenta loguearte.");
               return;
             }
-
             const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
               method: 'POST',
               headers: {
@@ -103,11 +99,8 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
             });
 
             const data = await res.json();
-
             if (res.ok) {
-              // Recargamos la lista desde la DB
               await cargarCategorias();
-              // Seleccionamos la categoría recién creada usando el ID que devolvió el backend
               setNuevoProducto(prev => ({ ...prev, categoria_id: data.id }));
               alert(`Categoría "${nombreNuevaCat}" creada con éxito.`);
             } else {
@@ -118,7 +111,7 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
             alert("Error de conexión con el servidor.");
           }
         }
-      }, 200); // Un pelín más de tiempo para asegurar que el select se cierre bien
+      }, 200); 
       return;
     }
 
@@ -137,13 +130,19 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
 
   const abrirModalNuevo = () => {
     setModoEdicion(false);
-    setNuevoProducto({ id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '', stock_actual: '', stock_minimo: '', porcentaje_ganancia: '', categoria_id: categorias[0]?.id || '', proveedor: '' });
+    // 👇 AÑADIDO: Reseteo incluye unidad_medida
+    setNuevoProducto({ 
+      id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '', 
+      stock_actual: '', stock_minimo: '', porcentaje_ganancia: '', 
+      categoria_id: categorias[0]?.id || '', proveedor: '', unidad_medida: 'unidad' 
+    });
     setMostrarModal(true);
   };
 
   const abrirModalEditar = (prod) => {
     setModoEdicion(true);
-    setNuevoProducto({ ...prod, porcentaje_ganancia: '' });
+    // 👇 AÑADIDO: Asegura que si no tiene unidad_medida en la BD, asigne 'unidad'
+    setNuevoProducto({ ...prod, porcentaje_ganancia: '', unidad_medida: prod.unidad_medida || 'unidad' });
     setMostrarModal(true);
   };
 
@@ -153,12 +152,10 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
       const token = localStorage.getItem('tokenMinimarket');
       const productoAGuardar = { ...nuevoProducto, empresa_id: usuarioActivo.empresa_id };
 
-      // 👇 URL ACTUALIZADA (3/4) 👇
       let url = 'https://api-minimarket-rc.onrender.com/api/productos';
       let metodo = 'POST';
 
       if (modoEdicion) {
-        // 👇 URL ACTUALIZADA (4/4) 👇
         url = `https://api-minimarket-rc.onrender.com/api/productos/${nuevoProducto.id}`;
         metodo = 'PUT';
       }
@@ -222,7 +219,10 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                 <td>{prod.nombre}</td>
                 <td style={{ textAlign: 'right', color: 'var(--text-dim)' }}>Gs. {Number(prod.precio_compra).toLocaleString('es-PY')}</td>
                 <td className="price" style={{ textAlign: 'right' }}>Gs. {Number(prod.precio_venta).toLocaleString('es-PY')}</td>
-                <td style={{ textAlign: 'right' }}>{prod.stock_actual} unid.</td>
+                {/* 👇 AÑADIDO: Muestra la medida correcta en la tabla */}
+                <td style={{ textAlign: 'right' }}>
+                  {prod.stock_actual} {prod.unidad_medida === 'kg' ? 'Kg' : (prod.unidad_medida === 'litro' ? 'L' : 'unid.')}
+                </td>
               </tr>
             ))}
             {productosFiltrados.length === 0 && (
@@ -243,9 +243,29 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
               <div className="form-grid">
                 <div className="form-group full-width"><label>Nombre del Producto</label><input type="text" name="nombre" value={nuevoProducto.nombre} onChange={manejarCambioInput} required /></div>
                 <div className="form-group"><label>Código de Barras</label><input type="text" name="codigo_barras" value={nuevoProducto.codigo_barras} onChange={manejarCambioInput} required /></div>
-                <div className="form-group"><label>Stock Actual</label><input type="number" name="stock_actual" value={nuevoProducto.stock_actual} onChange={manejarCambioInput} required /></div>
+                
+                {/* 👇 AÑADIDO: Selector de Unidad de Medida 👇 */}
+                <div className="form-group">
+                  <label>Tipo de Venta (Medida)</label>
+                  <select 
+                    name="unidad_medida" 
+                    value={nuevoProducto.unidad_medida} 
+                    onChange={manejarCambioInput}
+                    style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-base)', color: 'white' }}
+                  >
+                    <option value="unidad">Unidad / Paquete</option>
+                    <option value="kg">Kilogramo (Kg) - Granel</option>
+                    <option value="litro">Litro (L)</option>
+                  </select>
+                </div>
 
-                {/* 👇 NUEVO: El Select ahora se dibuja leyendo la base de datos 👇 */}
+                {/* 👇 AÑADIDO: El Stock ahora permite decimales (step="any") 👇 */}
+                <div className="form-group">
+                  <label>Stock Actual</label>
+                  <input type="number" step="any" name="stock_actual" value={nuevoProducto.stock_actual} onChange={manejarCambioInput} required />
+                </div>
+
+                {/* Select de Categoría usando la BD */}
                 <div className="form-group">
                   <label>Categoría</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
@@ -274,12 +294,17 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                 </div>
 
                 <div className="form-group"><label>Proveedor (Opcional)</label><input type="text" name="proveedor" value={nuevoProducto.proveedor} onChange={manejarCambioInput} placeholder="Ej. Coca-Cola" /></div>
-                <div className="form-group full-width" style={{ borderTop: '1px dashed #444', paddingTop: '15px', marginTop: '10px' }}><label style={{ color: 'var(--accent)' }}>Finanzas del Producto</label></div>
+                
+                {/* 👇 AÑADIDO: El título cambia según la medida elegida */}
+                <div className="form-group full-width" style={{ borderTop: '1px dashed #444', paddingTop: '15px', marginTop: '10px' }}>
+                  <label style={{ color: 'var(--accent)' }}>Finanzas del Producto (Por {nuevoProducto.unidad_medida === 'kg' ? 'Kilo' : (nuevoProducto.unidad_medida === 'litro' ? 'Litro' : 'Unidad')})</label>
+                </div>
+                
                 <div className="form-group"><label>Precio Compra (Costo Gs.)</label><input type="number" name="precio_compra" value={nuevoProducto.precio_compra} onChange={manejarCambioInput} required /></div>
                 <div className="form-group"><label>% Ganancia Deseada (Opcional)</label><input type="number" name="porcentaje_ganancia" value={nuevoProducto.porcentaje_ganancia} onChange={manejarCambioInput} placeholder="Ej. 30" /></div>
                 <div className="form-group full-width"><label>Precio Venta Final (Gs.)</label><input type="number" name="precio_venta" value={nuevoProducto.precio_venta} onChange={manejarCambioInput} required style={{ backgroundColor: '#2a2a2a', fontWeight: 'bold', color: 'var(--accent)' }} /></div>
               </div>
-              <button type="submit" className="btn-primary" style={{ width: '100%' }}>{modoEdicion ? 'Guardar Cambios' : 'Guardar en Inventario'}</button>
+              <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '20px' }}>{modoEdicion ? 'Guardar Cambios' : 'Guardar en Inventario'}</button>
             </form>
           </div>
         </div>
