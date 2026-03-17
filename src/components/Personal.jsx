@@ -7,6 +7,9 @@ function Personal({ usuarioActivo }) {
     nombre: '', email: '', password: '', rol: 'cajero'
   });
 
+  // 👇 Variable para verificar si el plan es básico
+  const esPlanBasico = usuarioActivo.plan === 'basico';
+
   const cargarEmpleados = async () => {
     try {
       const token = localStorage.getItem('tokenMinimarket');
@@ -24,7 +27,6 @@ function Personal({ usuarioActivo }) {
     cargarEmpleados();
   }, [usuarioActivo.empresa_id]);
 
-  // 👇 FUNCIÓN DE ELIMINAR (Ahora dentro del componente)
   const eliminarEmpleado = async (id, nombre) => {
     if (id === usuarioActivo.id) {
         alert("No puedes eliminarte a ti mismo.");
@@ -41,7 +43,7 @@ function Personal({ usuarioActivo }) {
 
         if (res.ok) {
           alert("Empleado eliminado correctamente");
-          cargarEmpleados(); // Recarga la lista automáticamente
+          cargarEmpleados();
         } else {
           const error = await res.json();
           alert(error.mensaje || "No se pudo eliminar");
@@ -81,8 +83,26 @@ function Personal({ usuarioActivo }) {
     <div style={{ height: '100%', overflowY: 'auto', paddingRight: '10px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2>👥 Gestión de Personal</h2>
-        <button className="btn-primary" onClick={() => setMostrarModal(true)}>+ Nuevo Empleado</button>
+        
+        {/* 👇 Botón condicional según el Plan */}
+        <button 
+          className="btn-primary" 
+          onClick={() => esPlanBasico ? alert("Tu Plan Básico no permite agregar empleados. Contacta con RC Creación de Software para subir al Plan Emprendedor.") : setMostrarModal(true)}
+          style={{ 
+            backgroundColor: esPlanBasico ? '#4b5563' : 'var(--accent)', 
+            cursor: esPlanBasico ? 'not-allowed' : 'pointer',
+            opacity: esPlanBasico ? 0.7 : 1
+          }}
+        >
+          {esPlanBasico ? '🔒 Plan Básico (Bloqueado)' : '+ Nuevo Empleado'}
+        </button>
       </div>
+
+      {esPlanBasico && (
+        <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', padding: '10px', borderRadius: '8px', marginBottom: '20px', color: '#f59e0b', fontSize: '14px' }}>
+          💡 El Plan Básico solo permite el acceso del administrador principal.
+        </div>
+      )}
 
       <div className="table-container">
         <table>
@@ -109,7 +129,6 @@ function Personal({ usuarioActivo }) {
                   </span>
                 </td>
                 <td style={{ textAlign: 'center' }}>
-                    {/* 👇 BOTÓN DE ELIMINAR CON ESTILO ROJO */}
                     {emp.id !== usuarioActivo.id && (
                         <button 
                             onClick={() => eliminarEmpleado(emp.id, emp.nombre)}

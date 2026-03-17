@@ -10,9 +10,9 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
 
   // 👇 AÑADIDO: unidad_medida al estado inicial
   const [nuevoProducto, setNuevoProducto] = useState({
-    id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '', 
-    stock_actual: '', stock_minimo: '', porcentaje_ganancia: '', categoria_id: '', 
-    proveedor: '', unidad_medida: 'unidad' 
+    id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '',
+    stock_actual: '', stock_minimo: '', porcentaje_ganancia: '', categoria_id: '',
+    proveedor: '', unidad_medida: 'unidad'
   });
 
   // Función para buscar las categorías de esta empresa
@@ -40,19 +40,19 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
 
   const crearNuevaCategoriaDirecto = async () => {
     const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
-    
+
     if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
       try {
         const token = localStorage.getItem('tokenMinimarket');
         const res = await fetch('https://api-minimarket-rc.onrender.com/api/categorias', {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${token}` 
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ 
-            nombre: nombreNuevaCat.trim(), 
-            empresa_id: usuarioActivo.empresa_id 
+          body: JSON.stringify({
+            nombre: nombreNuevaCat.trim(),
+            empresa_id: usuarioActivo.empresa_id
           })
         });
 
@@ -111,7 +111,7 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
             alert("Error de conexión con el servidor.");
           }
         }
-      }, 200); 
+      }, 200);
       return;
     }
 
@@ -131,10 +131,10 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
   const abrirModalNuevo = () => {
     setModoEdicion(false);
     // 👇 AÑADIDO: Reseteo incluye unidad_medida
-    setNuevoProducto({ 
-      id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '', 
-      stock_actual: '', stock_minimo: '', porcentaje_ganancia: '', 
-      categoria_id: categorias[0]?.id || '', proveedor: '', unidad_medida: 'unidad' 
+    setNuevoProducto({
+      id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '',
+      stock_actual: '', stock_minimo: '', porcentaje_ganancia: '',
+      categoria_id: categorias[0]?.id || '', proveedor: '', unidad_medida: 'unidad'
     });
     setMostrarModal(true);
   };
@@ -221,7 +221,7 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                 <td className="price" style={{ textAlign: 'right' }}>Gs. {Number(prod.precio_venta).toLocaleString('es-PY')}</td>
                 {/* 👇 AÑADIDO: Muestra la medida correcta en la tabla */}
                 <td style={{ textAlign: 'right' }}>
-                  {prod.stock_actual} {prod.unidad_medida === 'kg' ? 'Kg' : (prod.unidad_medida === 'litro' ? 'L' : 'unid.')}
+                  {Number(prod.stock_actual)} {prod.unidad_medida === 'kg' ? 'Kg' : (prod.unidad_medida === 'litro' ? 'L' : 'unid.')}
                 </td>
               </tr>
             ))}
@@ -243,13 +243,13 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
               <div className="form-grid">
                 <div className="form-group full-width"><label>Nombre del Producto</label><input type="text" name="nombre" value={nuevoProducto.nombre} onChange={manejarCambioInput} required /></div>
                 <div className="form-group"><label>Código de Barras</label><input type="text" name="codigo_barras" value={nuevoProducto.codigo_barras} onChange={manejarCambioInput} required /></div>
-                
+
                 {/* 👇 AÑADIDO: Selector de Unidad de Medida 👇 */}
                 <div className="form-group">
                   <label>Tipo de Venta (Medida)</label>
-                  <select 
-                    name="unidad_medida" 
-                    value={nuevoProducto.unidad_medida} 
+                  <select
+                    name="unidad_medida"
+                    value={nuevoProducto.unidad_medida}
                     onChange={manejarCambioInput}
                     style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-base)', color: 'white' }}
                   >
@@ -294,12 +294,12 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                 </div>
 
                 <div className="form-group"><label>Proveedor (Opcional)</label><input type="text" name="proveedor" value={nuevoProducto.proveedor} onChange={manejarCambioInput} placeholder="Ej. Coca-Cola" /></div>
-                
+
                 {/* 👇 AÑADIDO: El título cambia según la medida elegida */}
                 <div className="form-group full-width" style={{ borderTop: '1px dashed #444', paddingTop: '15px', marginTop: '10px' }}>
                   <label style={{ color: 'var(--accent)' }}>Finanzas del Producto (Por {nuevoProducto.unidad_medida === 'kg' ? 'Kilo' : (nuevoProducto.unidad_medida === 'litro' ? 'Litro' : 'Unidad')})</label>
                 </div>
-                
+
                 <div className="form-group"><label>Precio Compra (Costo Gs.)</label><input type="number" name="precio_compra" value={nuevoProducto.precio_compra} onChange={manejarCambioInput} required /></div>
                 <div className="form-group"><label>% Ganancia Deseada (Opcional)</label><input type="number" name="porcentaje_ganancia" value={nuevoProducto.porcentaje_ganancia} onChange={manejarCambioInput} placeholder="Ej. 30" /></div>
                 <div className="form-group full-width"><label>Precio Venta Final (Gs.)</label><input type="number" name="precio_venta" value={nuevoProducto.precio_venta} onChange={manejarCambioInput} required style={{ backgroundColor: '#2a2a2a', fontWeight: 'bold', color: 'var(--accent)' }} /></div>
