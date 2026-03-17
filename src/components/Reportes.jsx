@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+// 👇 Importamos Recharts para el gráfico
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 function Reportes({ usuarioActivo }) {
   const [datos, setDatos] = useState({
@@ -9,12 +11,16 @@ function Reportes({ usuarioActivo }) {
 
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
+  const [cargando, setCargando] = useState(true);
+
+  // 👇 Verificamos el plan del usuario activo
+  const esPlanBasico = usuarioActivo.plan === 'basico';
 
   const cargarReportes = async () => {
+    setCargando(true);
     try {
       const token = localStorage.getItem('tokenMinimarket');
       
-      // 👇 ACÁ ESTÁ EL CAMBIO A PRODUCCIÓN 👇
       let url = `https://api-minimarket-rc.onrender.com/api/reportes/${usuarioActivo.empresa_id}`;
       
       if (fechaInicio && fechaFin) {
@@ -31,12 +37,44 @@ function Reportes({ usuarioActivo }) {
       }
     } catch (error) {
       console.error("Error al cargar reportes:", error);
+    } finally {
+      setCargando(false);
     }
   };
 
   useEffect(() => {
     cargarReportes();
   }, [usuarioActivo.empresa_id]);
+
+  // ==========================================
+  // MATEMÁTICAS PARA EL GRÁFICO (Agrupar por fecha)
+  // ==========================================
+  const generarDatosGrafico = () => {
+    if (!datos.tickets || datos.tickets.length === 0) return [];
+
+    const grupos = {};
+    
+    // Invertimos el array para que las fechas más antiguas queden a la izquierda del gráfico
+    const ticketsOrdenados = [...datos.tickets].reverse();
+
+    ticketsOrdenados.forEach(ticket => {
+      const fechaObj = new Date(ticket.fecha_hora);
+      // Extraemos solo el día y mes (Ej: "17 mar")
+      const fechaCorta = fechaObj.toLocaleDateString('es-PY', { day: '2-digit', month: 'short' });
+
+      if (!grupos[fechaCorta]) {
+        grupos[fechaCorta] = 0;
+      }
+      grupos[fechaCorta] += Number(ticket.total);
+    });
+
+    return Object.keys(grupos).map(fecha => ({
+      nombre: fecha,
+      total: grupos[fecha]
+    }));
+  };
+
+  const datosGrafico = generarDatosGrafico();
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', paddingRight: '10px', paddingBottom: '30px' }}>
@@ -63,7 +101,7 @@ function Reportes({ usuarioActivo }) {
         </div>
       </div>
 
-      {/* 1. TARJETAS DE INDICADORES (KPIs) */}
+      {/* 1. TARJETAS DE INDICADORES (KPIs) - Disponibles para todos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
         <div className="panel" style={{ padding: '25px', borderLeft: '4px solid #3b82f6' }}>
           <p style={{ margin: '0 0 10px 0', color: 'var(--text-dim)', fontSize: '14px' }}>Ingresos Totales (Ventas)</p>
@@ -81,11 +119,64 @@ function Reportes({ usuarioActivo }) {
         </div>
       </div>
 
-      {/* 👇 AQUÍ APLICAMOS EL TRUCO alignItems: 'stretch' PARA IGUALAR ALTURAS 👇 */}
+      {/* ==========================================
+          NUEVO: GRÁFICO AVANZADO (CON BLOQUEO DE PLAN)
+      ========================================== */}
+      <div className="panel" style={{ padding: '20px', marginBottom: '30px', position: 'relative', overflow: 'hidden' }}>
+        <h3 style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          📈 Tendencia de Ingresos Diarios
+          {esPlanBasico && (
+             <span style={{ fontSize: '12px', backgroundColor: '#ef4444', padding: '4px 8px', borderRadius: '4px', color: 'white' }}>🔒 PRO</span>
+          )}
+        </h3>
+
+        {/* Capa de bloqueo para Plan Básico */}
+        {esPlanBasico && (
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(5px)',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+            zIndex: 10, borderRadius: '8px'
+          }}>
+            <h2 style={{ color: 'white', marginBottom: '10px' }}>Gráficos Avanzados Bloqueados</h2>
+            <p style={{ color: 'var(--text-dim)', textAlign: 'center', maxWidth: '450px', marginBottom: '20px' }}>
+              Visualizar las tendencias de ventas es una función exclusiva del <strong>Plan Emprendedor</strong>.
+            </p>
+            <button 
+              className="btn-primary" 
+              onClick={() => alert("Contacta a RC Creación de Software para actualizar tu plan.")}
+            >
+              ⭐ Subir al Plan Emprendedor
+            </button>
+          </div>
+        )}
+
+        {/* El Gráfico Real */}
+        <div style={{ height: '250px', width: '100%', opacity: esPlanBasico ? 0.3 : 1, pointerEvents: esPlanBasico ? 'none' : 'auto' }}>
+          {datosGrafico.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={datosGrafico} margin={{ top: 10, right: 10, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="nombre" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" tickFormatter={(value) => `Gs. ${value/1000}k`} />
+                <Tooltip 
+                  formatter={(value) => [`Gs. ${value.toLocaleString('es-PY')}`, 'Ingresos']}
+                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: 'white' }}
+                />
+                <Bar dataKey="total" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div style={{ height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-dim)' }}>
+              {cargando ? 'Cargando datos...' : 'Aún no hay ventas para generar el gráfico.'}
+            </div>
+          )}
+        </div>
+      </div>
+
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'stretch' }}>
         
         {/* 2. HISTORIAL DE TICKETS (Lado Izquierdo) */}
-        {/* 👇 Le agregamos flex column para que la tabla use todo el espacio sobrante 👇 */}
         <div className="panel" style={{ flex: '2', minWidth: '350px', padding: '20px', display: 'flex', flexDirection: 'column' }}>
           <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '15px', marginBottom: '20px' }}>🧾 Historial de Operaciones</h3>
           <div className="table-container" style={{ flex: 1, overflowY: 'auto' }}>
@@ -134,7 +225,7 @@ function Reportes({ usuarioActivo }) {
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', color: 'white' }}>{prod.nombre}</p>
-                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-dim)' }}>{prod.cantidad_vendida} unidades vendidas</p>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-dim)' }}>{Number(prod.cantidad_vendida)} unidades vendidas</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ margin: 0, fontWeight: 'bold', color: '#10b981' }}>Gs. {Number(prod.total_generado).toLocaleString('es-PY')}</p>
