@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-// 👇 AÑADIDO: Importamos la librería del escáner
-import { Html5QrcodeScanner } from 'html5-qrcode';
+// 👇 IMPORTANTE: Añadimos Html5QrcodeSupportedFormats aquí
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 function Caja({ productos, usuarioActivo, cargarProductos }) {
   const [carrito, setCarrito] = useState([]);
@@ -9,7 +9,7 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
   const [busquedaCaja, setBusquedaCaja] = useState('');
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
 
-  // 👇 AÑADIDO: Estado para mostrar la cámara
+  // Estado para mostrar la cámara
   const [mostrarEscaner, setMostrarEscaner] = useState(false);
 
   // Estados para preguntar la cantidad
@@ -33,7 +33,7 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
   });
 
   // ==========================================
-  // 👇 AÑADIDO: LÓGICA DE LA CÁMARA (ESCÁNER) 👇
+  // LÓGICA DE LA CÁMARA (ESCÁNER) - VERSIÓN TURBO 🚀
   // ==========================================
   // Usamos un Ref para tener siempre los productos actualizados dentro del escáner
   const productosRef = useRef(productos);
@@ -43,12 +43,21 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
     let html5QrcodeScanner = null;
 
     if (mostrarEscaner) {
-      // 👇 SOLUCIÓN: Le damos 150 milisegundos a la pantalla para que dibuje el cuadro antes de encender la cámara
       setTimeout(() => {
         try {
+          // 👇 AQUÍ ESTÁ EL CAMBIO: Velocidad a 25 fps, cuadro más ancho y formatos limitados a supermercado
           html5QrcodeScanner = new Html5QrcodeScanner(
             "lector-barras",
-            { fps: 10, qrbox: { width: 250, height: 150 } },
+            { 
+              fps: 25, 
+              qrbox: { width: 300, height: 100 },
+              formatsToSupport: [ 
+                Html5QrcodeSupportedFormats.EAN_13, 
+                Html5QrcodeSupportedFormats.EAN_8, 
+                Html5QrcodeSupportedFormats.UPC_A, 
+                Html5QrcodeSupportedFormats.CODE_128 
+              ]
+            },
             false
           );
 
@@ -95,7 +104,7 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
     if (e) e.preventDefault();
     if (!productoEnEspera) return;
 
-    // 👇 SOLUCIÓN DECIMALES: Cambiamos comas por puntos automáticamente por si el usuario se equivoca
+    // SOLUCIÓN DECIMALES: Cambiamos comas por puntos automáticamente por si el usuario se equivoca
     const cantidadLimpia = String(cantidadEspera).replace(',', '.');
     const cantNum = parseFloat(cantidadLimpia);
     
@@ -322,7 +331,7 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
         <div className="panel" style={{ padding: '30px', borderTop: '4px solid var(--accent)' }}>
           <h2 style={{ marginBottom: '20px', color: 'white' }}>🔍 Buscar y Agregar</h2>
           
-          {/* 👇 AÑADIDO: Contenedor flex para agrupar buscador y cámara 👇 */}
+          {/* Contenedor flex para agrupar buscador y cámara */}
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: 1 }} onClick={(e) => e.stopPropagation()}>
               <input 
@@ -353,7 +362,7 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
               )}
             </div>
             
-            {/* 👇 AÑADIDO: Botón de Cámara 👇 */}
+            {/* Botón de Cámara */}
             <button 
               onClick={() => setMostrarEscaner(true)} 
               className="btn-primary" 
@@ -391,6 +400,7 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
                   <p style={{ margin: '0 0 5px 0', color: 'white', fontWeight: 'bold' }}>{item.nombre}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button onClick={() => cambiarCantidadTicket(item.id, -1)} style={{ padding: '2px 8px', background: '#444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>-</button>
+                    {/* NÚMEROS LIMPIOS EN EL TICKET DE PANTALLA */}
                     <span style={{ color: 'var(--text-dim)', fontSize: '14px', minWidth: '20px', textAlign: 'center' }}>
                       {Number(item.cantidad)} {item.unidad_medida === 'kg' ? 'Kg' : ''}
                     </span>
@@ -426,7 +436,7 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
           MODALES EXPANDIDOS Y ORDENADOS
       ========================================== */}
 
-      {/* 👇 AÑADIDO: MODAL DE LA CÁMARA 👇 */}
+      {/* MODAL DE LA CÁMARA */}
       {mostrarEscaner && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
