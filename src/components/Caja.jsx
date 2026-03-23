@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+// 👇 AÑADIDO: Importamos la librería del escáner
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 function Caja({ productos, usuarioActivo, cargarProductos }) {
   const [carrito, setCarrito] = useState([]);
@@ -6,6 +8,9 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
   // Estados del Buscador
   const [busquedaCaja, setBusquedaCaja] = useState('');
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+
+  // 👇 AÑADIDO: Estado para mostrar la cámara
+  const [mostrarEscaner, setMostrarEscaner] = useState(false);
 
   // Estados para preguntar la cantidad
   const [productoEnEspera, setProductoEnEspera] = useState(null);
@@ -26,6 +31,48 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
   const [productoRapido, setProductoRapido] = useState({
     codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '', stock_actual: '1'
   });
+
+  // ==========================================
+  // 👇 AÑADIDO: LÓGICA DE LA CÁMARA (ESCÁNER) 👇
+  // ==========================================
+  // Usamos un Ref para tener siempre los productos actualizados dentro del escáner
+  const productosRef = useRef(productos);
+  useEffect(() => { productosRef.current = productos; }, [productos]);
+
+  useEffect(() => {
+    let html5QrcodeScanner = null;
+
+    if (mostrarEscaner) {
+      html5QrcodeScanner = new Html5QrcodeScanner(
+        "lector-barras",
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        false
+      );
+
+      html5QrcodeScanner.render(
+        (codigoDecodificado) => {
+          html5QrcodeScanner.clear();
+          setMostrarEscaner(false);
+          setBusquedaCaja(codigoDecodificado);
+
+          const matchExacto = productosRef.current.find(p => p.codigo_barras === codigoDecodificado);
+          
+          if (matchExacto) {
+            prepararProductoParaCarrito(matchExacto);
+          } else {
+            alert(`⚠️ Código escaneado: ${codigoDecodificado}\nEste producto no está en el inventario.`);
+          }
+        },
+        (errorLectura) => { /* Errores de lectura frame a frame se ignoran silenciosamente */ }
+      );
+    }
+
+    return () => {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().catch(error => console.error("Error al limpiar cámara", error));
+      }
+    };
+  }, [mostrarEscaner]);
 
   // ==========================================
   // LÓGICA DE AGREGAR PRODUCTOS
@@ -267,34 +314,49 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
       <div style={{ flex: '2', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div className="panel" style={{ padding: '30px', borderTop: '4px solid var(--accent)' }}>
           <h2 style={{ marginBottom: '20px', color: 'white' }}>🔍 Buscar y Agregar</h2>
-          <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
-            <input 
-              type="text" 
-              placeholder="Escribe el nombre o escanea el código y presiona Enter..." 
-              value={busquedaCaja} 
-              onChange={manejarBusquedaChange} 
-              onKeyDown={manejarEnterBusqueda} 
-              onFocus={() => { if(busquedaCaja) setMostrarSugerencias(true); }} 
-              autoFocus 
-              style={{ width: '100%', padding: '15px', fontSize: '18px', borderRadius: '8px' }} 
-            />
-            {mostrarSugerencias && sugerencias.length > 0 && (
-              <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#2a2a2a', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 10, listStyle: 'none', padding: 0, margin: '5px 0 0 0', maxHeight: '250px', overflowY: 'auto', boxShadow: '0 8px 16px rgba(0,0,0,0.5)' }}>
-                {sugerencias.map(prod => (
-                  <li 
-                    key={prod.id} 
-                    onClick={() => prepararProductoParaCarrito(prod)} 
-                    style={{ padding: '15px', cursor: 'pointer', borderBottom: '1px solid #3a3a3a', display: 'flex', justifyContent: 'space-between', color: 'white' }} 
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3a3a3a'} 
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <span>{prod.nombre}</span>
-                    <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>Gs. {Number(prod.precio_venta).toLocaleString('es-PY')}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          
+          {/* 👇 AÑADIDO: Contenedor flex para agrupar buscador y cámara 👇 */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: 1 }} onClick={(e) => e.stopPropagation()}>
+              <input 
+                type="text" 
+                placeholder="Escribe el nombre o escanea el código y presiona Enter..." 
+                value={busquedaCaja} 
+                onChange={manejarBusquedaChange} 
+                onKeyDown={manejarEnterBusqueda} 
+                onFocus={() => { if(busquedaCaja) setMostrarSugerencias(true); }} 
+                autoFocus 
+                style={{ width: '100%', padding: '15px', fontSize: '18px', borderRadius: '8px' }} 
+              />
+              {mostrarSugerencias && sugerencias.length > 0 && (
+                <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#2a2a2a', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 10, listStyle: 'none', padding: 0, margin: '5px 0 0 0', maxHeight: '250px', overflowY: 'auto', boxShadow: '0 8px 16px rgba(0,0,0,0.5)' }}>
+                  {sugerencias.map(prod => (
+                    <li 
+                      key={prod.id} 
+                      onClick={() => prepararProductoParaCarrito(prod)} 
+                      style={{ padding: '15px', cursor: 'pointer', borderBottom: '1px solid #3a3a3a', display: 'flex', justifyContent: 'space-between', color: 'white' }} 
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3a3a3a'} 
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <span>{prod.nombre}</span>
+                      <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>Gs. {Number(prod.precio_venta).toLocaleString('es-PY')}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            
+            {/* 👇 AÑADIDO: Botón de Cámara 👇 */}
+            <button 
+              onClick={() => setMostrarEscaner(true)} 
+              className="btn-primary" 
+              style={{ padding: '15px', borderRadius: '8px', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '60px' }}
+              title="Escanear con Cámara"
+            >
+              📷
+            </button>
           </div>
+
         </div>
         
         <div style={{ display: 'flex', gap: '15px' }}>
@@ -322,7 +384,6 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
                   <p style={{ margin: '0 0 5px 0', color: 'white', fontWeight: 'bold' }}>{item.nombre}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button onClick={() => cambiarCantidadTicket(item.id, -1)} style={{ padding: '2px 8px', background: '#444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>-</button>
-                    {/* 👇 NÚMEROS LIMPIOS EN EL TICKET DE PANTALLA */}
                     <span style={{ color: 'var(--text-dim)', fontSize: '14px', minWidth: '20px', textAlign: 'center' }}>
                       {Number(item.cantidad)} {item.unidad_medida === 'kg' ? 'Kg' : ''}
                     </span>
@@ -357,6 +418,25 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
       {/* ==========================================
           MODALES EXPANDIDOS Y ORDENADOS
       ========================================== */}
+
+      {/* 👇 AÑADIDO: MODAL DE LA CÁMARA 👇 */}
+      {mostrarEscaner && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <div className="modal-header">
+              <h3>📷 Escanear Código</h3>
+              <button className="btn-close" onClick={() => setMostrarEscaner(false)}>×</button>
+            </div>
+            
+            {/* Contenedor blanco para que la cámara y sus controles se vean bien */}
+            <div id="lector-barras" style={{ width: '100%', marginTop: '15px', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'white', color: 'black' }}></div>
+            
+            <p style={{ color: 'var(--text-dim)', marginTop: '15px', fontSize: '13px' }}>
+              Apunta la cámara de tu celular al código de barras del producto.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: TICKET IMPRESIÓN */}
       {ticketImprimir && (
@@ -398,7 +478,6 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
 
             <form onSubmit={confirmarAgregarAlCarrito}>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
-                {/* 👇 CLAVE: Ahora acepta puntos o comas libremente y no bloquea */}
                 <input 
                   ref={inputCantidadRef} 
                   type="text" 
@@ -495,7 +574,7 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
         </div>
       )}
 
-      {/* MODAL: CARGA RÁPIDA (Arreglado para aceptar decimales en Stock) */}
+      {/* MODAL: CARGA RÁPIDA */}
       {mostrarCargaRapida && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -515,7 +594,6 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
                 </div>
                 <div className="form-group">
                   <label>Stock</label>
-                  {/* 👇 SOLUCIÓN: Agregado step="0.001" a carga rápida */}
                   <input type="number" step="0.001" value={productoRapido.stock_actual} onChange={(e) => setProductoRapido({...productoRapido, stock_actual: e.target.value})} required />
                 </div>
                 <div className="form-group">
