@@ -43,28 +43,35 @@ function Caja({ productos, usuarioActivo, cargarProductos }) {
     let html5QrcodeScanner = null;
 
     if (mostrarEscaner) {
-      html5QrcodeScanner = new Html5QrcodeScanner(
-        "lector-barras",
-        { fps: 10, qrbox: { width: 250, height: 150 } },
-        false
-      );
+      // 👇 SOLUCIÓN: Le damos 150 milisegundos a la pantalla para que dibuje el cuadro antes de encender la cámara
+      setTimeout(() => {
+        try {
+          html5QrcodeScanner = new Html5QrcodeScanner(
+            "lector-barras",
+            { fps: 10, qrbox: { width: 250, height: 150 } },
+            false
+          );
 
-      html5QrcodeScanner.render(
-        (codigoDecodificado) => {
-          html5QrcodeScanner.clear();
-          setMostrarEscaner(false);
-          setBusquedaCaja(codigoDecodificado);
+          html5QrcodeScanner.render(
+            (codigoDecodificado) => {
+              html5QrcodeScanner.clear();
+              setMostrarEscaner(false);
+              setBusquedaCaja(codigoDecodificado);
 
-          const matchExacto = productosRef.current.find(p => p.codigo_barras === codigoDecodificado);
-          
-          if (matchExacto) {
-            prepararProductoParaCarrito(matchExacto);
-          } else {
-            alert(`⚠️ Código escaneado: ${codigoDecodificado}\nEste producto no está en el inventario.`);
-          }
-        },
-        (errorLectura) => { /* Errores de lectura frame a frame se ignoran silenciosamente */ }
-      );
+              const matchExacto = productosRef.current.find(p => p.codigo_barras === codigoDecodificado);
+              
+              if (matchExacto) {
+                prepararProductoParaCarrito(matchExacto);
+              } else {
+                alert(`⚠️ Código escaneado: ${codigoDecodificado}\nEste producto no está en el inventario.`);
+              }
+            },
+            (errorLectura) => { /* Ignoramos los errores de frame vacío */ }
+          );
+        } catch (error) {
+          console.error("Error al iniciar la cámara:", error);
+        }
+      }, 150); // <-- El retraso mágico
     }
 
     return () => {
