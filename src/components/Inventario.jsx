@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { Html5QrcodeScanner } from 'html5-qrcode'; // 👇 AÑADIDO: Importamos el escáner
 
 function Inventario({ productos, usuarioActivo, cargarProductos }) {
   const [busqueda, setBusqueda] = useState('');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
+  
+  // 👇 AÑADIDO: Estado para controlar si se muestra la cámara
+  const [mostrarScanner, setMostrarScanner] = useState(false);
 
-  // Estado para guardar la lista de categorías
   const [categorias, setCategorias] = useState([]);
 
-  // 👇 AÑADIDO: unidad_medida al estado inicial
   const [nuevoProducto, setNuevoProducto] = useState({
     id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '',
     stock_actual: '', stock_minimo: '', porcentaje_ganancia: '', categoria_id: '',
     proveedor: '', unidad_medida: 'unidad'
   });
 
-  // Función para buscar las categorías de esta empresa
   const cargarCategorias = async () => {
     try {
       const token = localStorage.getItem('tokenMinimarket');
@@ -25,7 +26,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
       if (res.ok) {
         const data = await res.json();
         setCategorias(data);
-        // Si hay categorías, seleccionamos la primera por defecto
         if (data.length > 0 && !nuevoProducto.categoria_id) {
           setNuevoProducto(prev => ({ ...prev, categoria_id: data[0].id }));
         }
@@ -33,14 +33,40 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
     } catch (error) { console.error(error); }
   };
 
-  // Cargamos las categorías apenas se abre el inventario
   useEffect(() => {
     cargarCategorias();
   }, []);
 
+  // 👇 AÑADIDO: Efecto para inicializar el escáner cuando se abre
+  useEffect(() => {
+    if (mostrarScanner) {
+      const scanner = new Html5QrcodeScanner(
+        "reader",
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        false
+      );
+
+      scanner.render(
+        (decodedText) => {
+          // Cuando lee un código exitosamente
+          setNuevoProducto(prev => ({ ...prev, codigo_barras: decodedText }));
+          setMostrarScanner(false); // Cerramos la cámara
+          scanner.clear(); // Limpiamos el escáner
+        },
+        (error) => {
+          // Ignoramos los errores de lectura continua
+        }
+      );
+
+      // Limpieza al desmontar
+      return () => {
+        scanner.clear().catch(error => console.error("Error al limpiar scanner", error));
+      };
+    }
+  }, [mostrarScanner]);
+
   const crearNuevaCategoriaDirecto = async () => {
     const nombreNuevaCat = window.prompt("Ingresa el nombre de la nueva categoría:");
-
     if (nombreNuevaCat && nombreNuevaCat.trim() !== '') {
       try {
         const token = localStorage.getItem('tokenMinimarket');
@@ -59,7 +85,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
         if (res.ok) {
           const data = await res.json();
           await cargarCategorias();
-          // Seteamos la nueva categoría al producto actual
           setNuevoProducto(prev => ({ ...prev, categoria_id: data.id }));
           alert(`Categoría "${nombreNuevaCat}" creada.`);
         } else {
@@ -74,7 +99,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
   const manejarCambioInput = (e) => {
     const { name, value } = e.target;
 
-    // Manejo de Nueva Categoría (desde el select si lo tuvieras configurado así)
     if (name === 'categoria_id' && value === 'nueva') {
       setNuevoProducto(prev => ({ ...prev, categoria_id: categorias[0]?.id || '' }));
       setTimeout(async () => {
@@ -115,7 +139,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
       return;
     }
 
-    // Lógica normal para los demás campos
     let datosActualizados = { ...nuevoProducto, [name]: value };
 
     if (name === 'precio_compra' || name === 'porcentaje_ganancia') {
@@ -130,7 +153,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
 
   const abrirModalNuevo = () => {
     setModoEdicion(false);
-    // 👇 AÑADIDO: Reseteo incluye unidad_medida
     setNuevoProducto({
       id: '', codigo_barras: '', nombre: '', precio_compra: '', precio_venta: '',
       stock_actual: '', stock_minimo: '', porcentaje_ganancia: '',
@@ -141,7 +163,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
 
   const abrirModalEditar = (prod) => {
     setModoEdicion(true);
-    // 👇 AÑADIDO: Asegura que si no tiene unidad_medida en la BD, asigne 'unidad'
     setNuevoProducto({ ...prod, porcentaje_ganancia: '', unidad_medida: prod.unidad_medida || 'unidad' });
     setMostrarModal(true);
   };
@@ -219,7 +240,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                 <td>{prod.nombre}</td>
                 <td style={{ textAlign: 'right', color: 'var(--text-dim)' }}>Gs. {Number(prod.precio_compra).toLocaleString('es-PY')}</td>
                 <td className="price" style={{ textAlign: 'right' }}>Gs. {Number(prod.precio_venta).toLocaleString('es-PY')}</td>
-                {/* 👇 AÑADIDO: Muestra la medida correcta en la tabla */}
                 <td style={{ textAlign: 'right' }}>
                   {Number(prod.stock_actual)} {prod.unidad_medida === 'kg' ? 'Kg' : (prod.unidad_medida === 'litro' ? 'L' : 'unid.')}
                 </td>
@@ -237,14 +257,41 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
           <div className="modal-content">
             <div className="modal-header">
               <h3>{modoEdicion ? '✏️ Editar Producto' : '📦 Registrar Producto'}</h3>
-              <button className="btn-close" onClick={() => setMostrarModal(false)}>×</button>
+              <button className="btn-close" onClick={() => { setMostrarModal(false); setMostrarScanner(false); }}>×</button>
             </div>
             <form onSubmit={guardarProducto}>
               <div className="form-grid">
                 <div className="form-group full-width"><label>Nombre del Producto</label><input type="text" name="nombre" value={nuevoProducto.nombre} onChange={manejarCambioInput} required /></div>
-                <div className="form-group"><label>Código de Barras</label><input type="text" name="codigo_barras" value={nuevoProducto.codigo_barras} onChange={manejarCambioInput} required /></div>
+                
+                {/* 👇 AÑADIDO: Modificación en el campo de Código de Barras para incluir el botón de escáner 👇 */}
+                <div className="form-group">
+                  <label>Código de Barras</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input type="text" name="codigo_barras" value={nuevoProducto.codigo_barras} onChange={manejarCambioInput} required style={{ flex: 1 }} />
+                    <button 
+                      type="button" 
+                      onClick={() => setMostrarScanner(!mostrarScanner)}
+                      style={{ padding: '0 15px', backgroundColor: '#4CAF50', border: 'none', borderRadius: '6px', color: 'white', cursor: 'pointer' }}
+                    >
+                      📷
+                    </button>
+                  </div>
+                </div>
 
-                {/* 👇 AÑADIDO: Selector de Unidad de Medida 👇 */}
+                {/* 👇 AÑADIDO: Contenedor donde se renderiza la cámara 👇 */}
+                {mostrarScanner && (
+                  <div className="form-group full-width" style={{ textAlign: 'center', backgroundColor: '#fff', padding: '10px', borderRadius: '8px' }}>
+                    <div id="reader" style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}></div>
+                    <button 
+                      type="button" 
+                      onClick={() => setMostrarScanner(false)}
+                      style={{ marginTop: '10px', padding: '8px 15px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                      Cancelar Escaneo
+                    </button>
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label>Tipo de Venta (Medida)</label>
                   <select
@@ -259,13 +306,11 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                   </select>
                 </div>
 
-                {/* 👇 AÑADIDO: El Stock ahora permite decimales (step="any") 👇 */}
                 <div className="form-group">
                   <label>Stock Actual</label>
                   <input type="number" step="any" name="stock_actual" value={nuevoProducto.stock_actual} onChange={manejarCambioInput} required />
                 </div>
 
-                {/* Select de Categoría usando la BD */}
                 <div className="form-group">
                   <label>Categoría</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
@@ -295,7 +340,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
 
                 <div className="form-group"><label>Proveedor (Opcional)</label><input type="text" name="proveedor" value={nuevoProducto.proveedor} onChange={manejarCambioInput} placeholder="Ej. Coca-Cola" /></div>
 
-                {/* 👇 AÑADIDO: El título cambia según la medida elegida */}
                 <div className="form-group full-width" style={{ borderTop: '1px dashed #444', paddingTop: '15px', marginTop: '10px' }}>
                   <label style={{ color: 'var(--accent)' }}>Finanzas del Producto (Por {nuevoProducto.unidad_medida === 'kg' ? 'Kilo' : (nuevoProducto.unidad_medida === 'litro' ? 'Litro' : 'Unidad')})</label>
                 </div>
