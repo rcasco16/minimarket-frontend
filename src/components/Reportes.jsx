@@ -119,7 +119,7 @@ function Reportes({ usuarioActivo }) {
         </div>
       </div>
 
-{/* ==========================================
+      {/* ==========================================
           GRÁFICO AVANZADO (CON BLOQUEO TOTAL DE PLAN)
       ========================================== */}
       <div className="panel" style={{ padding: '20px', marginBottom: '30px' }}>
@@ -151,9 +151,11 @@ function Reportes({ usuarioActivo }) {
           </div>
         ) : (
           // 👇 EL GRÁFICO REAL (Solo se renderiza si NO es básico) 👇
-          <div style={{ height: '250px', width: '100%' }}>
+          // 👇 CORRECCIÓN: Añadimos minHeight y minWidth al contenedor 👇
+          <div style={{ height: '250px', minHeight: '250px', width: '100%', minWidth: '0' }}>
             {datosGrafico.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              // 👇 CORRECCIÓN: Añadimos minWidth y minHeight al ResponsiveContainer 👇
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
                 <BarChart data={datosGrafico} margin={{ top: 10, right: 10, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                   <XAxis dataKey="nombre" stroke="#94a3b8" />
