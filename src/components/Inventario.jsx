@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Html5Qrcode } from 'html5-qrcode'; // 👇 ACTUALIZADO: Usamos la versión directa
+// 👇 IMPORTACIÓN ACTUALIZADA: Agregamos Html5QrcodeSupportedFormats
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 
 function Inventario({ productos, usuarioActivo, cargarProductos }) {
   const [busqueda, setBusqueda] = useState('');
@@ -37,7 +38,7 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
     cargarCategorias();
   }, []);
 
-  // 👇 ACTUALIZADO: Efecto mejorado para forzar cámara trasera y formato de código de barras
+  // 👇 ACTUALIZADO: Efecto optimizado para leer SOLO códigos de barras de productos
   useEffect(() => {
     let html5QrCode;
 
@@ -48,22 +49,32 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
         html5QrCode.start(
           { facingMode: "environment" }, // Fuerza la cámara trasera
           {
-            fps: 10,
-            qrbox: { width: 250, height: 100 } // Rectángulo ideal para códigos de barras
+            fps: 20, // 🚀 Aumentamos a 20 FPS para que sea más rápido
+            qrbox: { width: 250, height: 120 }, // Rectángulo ideal para códigos de barras
+            aspectRatio: 1.0,
+            // 🚀 MAGIA: Le decimos que SOLO busque códigos de supermercado (ignora QRs)
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E,
+              Html5QrcodeSupportedFormats.CODE_128
+            ]
           },
           (decodedText) => {
+            // Éxito: Lo leyó
             setNuevoProducto(prev => ({ ...prev, codigo_barras: decodedText }));
             setMostrarScanner(false);
           },
           (errorMessage) => {
-            // Ignoramos los errores de lectura continua
+            // Ignoramos los errores de lectura continua para no saturar la consola
           }
         ).catch((err) => {
           console.error("Error al iniciar la cámara:", err);
           alert("No se pudo acceder a la cámara. Verifica los permisos de tu navegador.");
           setMostrarScanner(false);
         });
-      }, 100);
+      }, 300); // Le damos 300ms para asegurar que el div "reader" ya existe en el DOM
     }
 
     return () => {
