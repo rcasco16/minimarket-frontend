@@ -220,7 +220,7 @@ tr:hover td {
 }
 
 /* =========================================
-   MODAL (Ventana Emergente de Nuevo Producto)
+   MODAL (Ventana Emergente de Nuevo Producto) - ACTUALIZADO
 ========================================= */
 .modal-overlay {
   position: fixed;
@@ -230,14 +230,17 @@ tr:hover td {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 10px; /* Añadido para que no toque los bordes en móvil */
 }
 
 .modal-content {
   background-color: var(--bg-panel);
-  padding: 30px;
+  padding: 20px; /* Un poco menos de padding en móviles */
   border-radius: 8px;
-  width: 90%;
+  width: 100%;
   max-width: 500px;
+  max-height: 90vh; /* EVITA QUE SE SALGA DE LA PANTALLA */
+  overflow-y: auto; /* PERMITE HACER SCROLL DENTRO DEL MODAL */
   border: 1px solid var(--border);
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
@@ -247,6 +250,11 @@ tr:hover td {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  position: sticky; /* Mantiene el título visible al hacer scroll */
+  top: 0;
+  background-color: var(--bg-panel);
+  padding-bottom: 10px;
+  z-index: 10;
 }
 
 .btn-close {
@@ -260,11 +268,22 @@ tr:hover td {
 
 .btn-close:hover { color: var(--danger); }
 
+/* MAGIA RESPONSIVA PARA EL FORMULARIO */
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr; /* 1 COLUMNA EN CELULARES */
   gap: 15px;
   margin-bottom: 20px;
+}
+
+/* 2 COLUMNAS SOLO EN PANTALLAS MÁS GRANDES (Tablets y PC) */
+@media (min-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .modal-content {
+    padding: 30px;
+  }
 }
 
 .form-group {
@@ -278,7 +297,6 @@ tr:hover td {
   color: var(--text-muted);
 }
 
-/* Para que el nombre del producto ocupe toda la fila entera */
 .full-width { grid-column: 1 / -1; }
 
 /* =========================================

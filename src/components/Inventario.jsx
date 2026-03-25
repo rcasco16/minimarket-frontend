@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode'; // 👇 AÑADIDO: Importamos el escáner
+import { Html5Qrcode } from 'html5-qrcode'; // 👇 ACTUALIZADO: Usamos la versión directa
 
 function Inventario({ productos, usuarioActivo, cargarProductos }) {
   const [busqueda, setBusqueda] = useState('');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   
-  // 👇 AÑADIDO: Estado para controlar si se muestra la cámara
+  // Estado para controlar si se muestra la cámara
   const [mostrarScanner, setMostrarScanner] = useState(false);
 
   const [categorias, setCategorias] = useState([]);
@@ -37,32 +37,40 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
     cargarCategorias();
   }, []);
 
-  // 👇 AÑADIDO: Efecto para inicializar el escáner cuando se abre
+  // 👇 ACTUALIZADO: Efecto mejorado para forzar cámara trasera y formato de código de barras
   useEffect(() => {
+    let html5QrCode;
+
     if (mostrarScanner) {
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: { width: 250, height: 150 } },
-        false
-      );
-
-      scanner.render(
-        (decodedText) => {
-          // Cuando lee un código exitosamente
-          setNuevoProducto(prev => ({ ...prev, codigo_barras: decodedText }));
-          setMostrarScanner(false); // Cerramos la cámara
-          scanner.clear(); // Limpiamos el escáner
-        },
-        (error) => {
-          // Ignoramos los errores de lectura continua
-        }
-      );
-
-      // Limpieza al desmontar
-      return () => {
-        scanner.clear().catch(error => console.error("Error al limpiar scanner", error));
-      };
+      setTimeout(() => {
+        html5QrCode = new Html5Qrcode("reader");
+        
+        html5QrCode.start(
+          { facingMode: "environment" }, // Fuerza la cámara trasera
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 100 } // Rectángulo ideal para códigos de barras
+          },
+          (decodedText) => {
+            setNuevoProducto(prev => ({ ...prev, codigo_barras: decodedText }));
+            setMostrarScanner(false);
+          },
+          (errorMessage) => {
+            // Ignoramos los errores de lectura continua
+          }
+        ).catch((err) => {
+          console.error("Error al iniciar la cámara:", err);
+          alert("No se pudo acceder a la cámara. Verifica los permisos de tu navegador.");
+          setMostrarScanner(false);
+        });
+      }, 100);
     }
+
+    return () => {
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => html5QrCode.clear()).catch(console.error);
+      }
+    };
   }, [mostrarScanner]);
 
   const crearNuevaCategoriaDirecto = async () => {
@@ -263,7 +271,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
               <div className="form-grid">
                 <div className="form-group full-width"><label>Nombre del Producto</label><input type="text" name="nombre" value={nuevoProducto.nombre} onChange={manejarCambioInput} required /></div>
                 
-                {/* 👇 AÑADIDO: Modificación en el campo de Código de Barras para incluir el botón de escáner 👇 */}
                 <div className="form-group">
                   <label>Código de Barras</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
@@ -278,7 +285,6 @@ function Inventario({ productos, usuarioActivo, cargarProductos }) {
                   </div>
                 </div>
 
-                {/* 👇 AÑADIDO: Contenedor donde se renderiza la cámara 👇 */}
                 {mostrarScanner && (
                   <div className="form-group full-width" style={{ textAlign: 'center', backgroundColor: '#fff', padding: '10px', borderRadius: '8px' }}>
                     <div id="reader" style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}></div>
